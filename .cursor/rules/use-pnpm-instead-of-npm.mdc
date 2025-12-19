@@ -1,0 +1,35 @@
+---
+alwaysApply: true
+---
+# Package Manager: pnpm
+
+This project uses pnpm as the package manager. Follow these rules strictly:
+
+## Commands
+- Use `pnpm install` instead of `npm install`
+- Use `pnpm add <package>` instead of `npm install <package>`
+- Use `pnpm add -D <package>` instead of `npm install --save-dev <package>`
+- Use `pnpm remove <package>` instead of `npm uninstall <package>`
+- Use `pnpm run <script>` instead of `npm run <script>`
+- Use `pnpm dlx` instead of `npx`
+- Use `pnpm create` instead of `npm create` or `npm init`
+
+## Lockfiles
+- This project uses `pnpm-lock.yaml`, not `package-lock.json`
+- Never suggest creating or modifying `package-lock.json`
+- Never suggest running `npm install` which would generate a package-lock.json
+
+## Workspaces
+- If this is a monorepo, use `pnpm-workspace.yaml` for workspace configuration
+- Use `pnpm -r` or `pnpm --filter` for running commands across workspaces
+
+## Examples
+- Installing dependencies: `pnpm install`
+- Adding a package: `pnpm add express`
+- Adding a dev dependency: `pnpm add -D typescript`
+- Running a script: `pnpm run dev` or `pnpm dev`
+- Running a one-off command: `pnpm dlx create-react-app my-app`
+
+## Important
+- Never suggest npm or yarn commands
+- Always assume pnpm is installed globally
