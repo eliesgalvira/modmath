@@ -25,19 +25,26 @@ export function useInverseCalculator(): UseInverseCalculatorReturn {
   const [hasCalculated, setHasCalculated] = useState(false);
 
   const calculate = useCallback(() => {
-    // Clear previous results
-    setResult(null);
-    setError(null);
-    setHasCalculated(true);
-
-    // Validate inputs
+    // Validate inputs first
     const validation = validateInputs(a, m);
     if (!validation.valid) {
-      setError(validation.error ?? "Invalid input");
+      // Only update if error changed (idempotent for same invalid input)
+      if (error !== validation.error) {
+        setResult(null);
+        setError(validation.error ?? "Invalid input");
+        setHasCalculated(true);
+      }
       return;
     }
 
     const { a: numA, m: numM } = validation.values!;
+
+    // Idempotent: skip if result already matches these inputs
+    if (result?.originalA === numA && result?.originalM === numM) {
+      return;
+    }
+
+    setHasCalculated(true);
 
     // Run the Extended Euclidean Algorithm
     const calcResult = extendedEuclidean(numA, numM);
@@ -48,12 +55,13 @@ export function useInverseCalculator(): UseInverseCalculatorReturn {
         `No modular inverse exists because gcd(${numA}, ${numM}) = ${calcResult.gcd} ≠ 1. ` +
         `The modular inverse only exists when gcd(a, m) = 1.`
       );
-      setResult(calcResult); // Still set result so we can show the steps
+      setResult(calcResult);
       return;
     }
 
+    setError(null);
     setResult(calcResult);
-  }, [a, m]);
+  }, [a, m, result, error]);
 
   return {
     a,
