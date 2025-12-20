@@ -57,7 +57,7 @@ export function Navbar() {
                 onClick={(e) => handleNavigation(e, link.href)}
                 aria-busy={isLoading}
                 className={cn(
-                  "px-3 py-1.5 text-sm font-medium transition-colors rounded-sm relative",
+                  "px-3 py-1.5 text-sm font-medium transition-colors rounded-none relative",
                   isActive
                     ? "bg-muted text-foreground"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
@@ -69,7 +69,7 @@ export function Navbar() {
                 </span>
                 {isLoading && (
                   <Skeleton
-                    className="absolute inset-0 rounded-sm"
+                    className="absolute inset-0"
                     role="status"
                     aria-label="Loading page"
                   />
