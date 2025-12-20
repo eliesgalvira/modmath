@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Roboto } from "next/font/google";
+import { Navbar } from "@/components/navbar";
 import "./globals.css";
 
 const roboto = Roboto({subsets:['latin'],variable:'--font-sans'});
@@ -15,8 +16,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Modular Inverse Calculator",
-  description: "Calculate modular multiplicative inverses with step-by-step Extended Euclidean Algorithm work",
+  title: {
+    default: "modmath",
+    template: "%s | modmath",
+  },
+  description: "Mathematical calculators with step-by-step explanations",
 };
 
 export default function RootLayout({
@@ -37,6 +41,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <Navbar />
         {children}
       </body>
     </html>
