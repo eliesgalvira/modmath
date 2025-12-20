@@ -1,33 +1,27 @@
 "use client";
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 interface CalculatorFormProps {
-  a: string;
-  m: string;
-  setA: (val: string) => void;
-  setM: (val: string) => void;
-  onCalculate: () => void;
+  onCalculate: (a: string, m: string) => void;
 }
 
-export function CalculatorForm({
-  a,
-  m,
-  setA,
-  setM,
-  onCalculate,
-}: CalculatorFormProps) {
+export function CalculatorForm({ onCalculate }: CalculatorFormProps) {
+  const [a, setA] = useState("");
+  const [m, setM] = useState("");
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onCalculate();
+    onCalculate(a, m);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
       e.preventDefault();
-      onCalculate();
+      onCalculate(a, m);
     }
   };
 

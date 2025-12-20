@@ -11,10 +11,6 @@ import { useInverseCalculator } from "@/hooks/use-inverse-calculator";
 
 export default function Page() {
   const {
-    a,
-    m,
-    setA,
-    setM,
     result,
     error,
     calculate,
@@ -38,13 +34,7 @@ export default function Page() {
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
-            <CalculatorForm
-              a={a}
-              m={m}
-              setA={setA}
-              setM={setM}
-              onCalculate={calculate}
-            />
+            <CalculatorForm onCalculate={calculate} />
           </CardContent>
         </Card>
 
