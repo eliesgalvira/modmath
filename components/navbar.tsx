@@ -55,6 +55,7 @@ export function Navbar() {
                 key={link.href}
                 href={link.href}
                 onClick={(e) => handleNavigation(e, link.href)}
+                aria-busy={isLoading}
                 className={cn(
                   "px-3 py-1.5 text-sm font-medium transition-colors rounded-sm relative",
                   isActive
@@ -67,7 +68,11 @@ export function Navbar() {
                   <span className="hidden sm:inline">{link.label}</span>
                 </span>
                 {isLoading && (
-                  <Skeleton className="absolute inset-0 rounded-sm" />
+                  <Skeleton
+                    className="absolute inset-0 rounded-sm"
+                    role="status"
+                    aria-label="Loading page"
+                  />
                 )}
               </Link>
             );
