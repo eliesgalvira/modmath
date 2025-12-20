@@ -1,39 +1,34 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import type { Step, CalculationResult } from "@/types";
 import { extendedEuclidean } from "@/lib/extended-euclidean";
 import { validateInputs } from "@/lib/validators";
 
 interface UseInverseCalculatorReturn {
-  a: string;
-  m: string;
-  setA: (val: string) => void;
-  setM: (val: string) => void;
   result: CalculationResult | null;
   steps: Step[];
   error: string | null;
-  calculate: () => void;
+  calculate: (a: string, m: string) => void;
   hasCalculated: boolean;
 }
 
 export function useInverseCalculator(): UseInverseCalculatorReturn {
-  const [a, setA] = useState("");
-  const [m, setM] = useState("");
   const [result, setResult] = useState<CalculationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [hasCalculated, setHasCalculated] = useState(false);
 
-  const calculate = useCallback(() => {
+  const calculate = (a: string, m: string) => {
     // Validate inputs first
     const validation = validateInputs(a, m);
     if (!validation.valid) {
-      // Only update if error changed (idempotent for same invalid input)
-      if (error !== validation.error) {
-        setResult(null);
-        setError(validation.error ?? "Invalid input");
-        setHasCalculated(true);
+      // Idempotent: skip if same validation error
+      if (error === validation.error) {
+        return;
       }
+      setResult(null);
+      setError(validation.error ?? "Invalid input");
+      setHasCalculated(true);
       return;
     }
 
@@ -61,13 +56,9 @@ export function useInverseCalculator(): UseInverseCalculatorReturn {
 
     setError(null);
     setResult(calcResult);
-  }, [a, m, result, error]);
+  };
 
   return {
-    a,
-    m,
-    setA,
-    setM,
     result,
     steps: result?.steps ?? [],
     error,
