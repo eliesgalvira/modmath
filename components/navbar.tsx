@@ -4,7 +4,7 @@ import { useState, useEffect, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { Loader2 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const navLinks = [
   { href: "/", label: "Modular Inverse" },
@@ -17,8 +17,12 @@ export function Navbar() {
   const [isPending, startTransition] = useTransition();
   const [pendingHref, setPendingHref] = useState<string | null>(null);
 
-  const handleNavigation = (href: string) => {
+  const handleNavigation = (
+    e: React.MouseEvent<HTMLAnchorElement>,
+    href: string
+  ) => {
     if (href === pathname) return;
+    e.preventDefault();
     setPendingHref(href);
     startTransition(() => {
       router.push(href);
@@ -47,10 +51,10 @@ export function Navbar() {
             const isActive = pathname === link.href;
             const isLoading = isPending && pendingHref === link.href;
             return (
-              <button
+              <Link
                 key={link.href}
-                onClick={() => handleNavigation(link.href)}
-                disabled={isLoading}
+                href={link.href}
+                onClick={(e) => handleNavigation(e, link.href)}
                 className={cn(
                   "px-3 py-1.5 text-sm font-medium transition-colors rounded-sm relative",
                   isActive
@@ -62,9 +66,9 @@ export function Navbar() {
                   {link.label}
                 </span>
                 {isLoading && (
-                  <Loader2 className="size-4 animate-spin absolute inset-0 m-auto" />
+                  <Skeleton className="absolute inset-0 rounded-sm" />
                 )}
-              </button>
+              </Link>
             );
           })}
         </div>
