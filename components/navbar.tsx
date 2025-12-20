@@ -7,8 +7,8 @@ import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const navLinks = [
-  { href: "/", label: "Modular Inverse" },
-  { href: "/crt", label: "Chinese Remainder Theorem" },
+  { href: "/", label: "Modular Inverse", shortLabel: "Inverse" },
+  { href: "/crt", label: "Chinese Remainder Theorem", shortLabel: "CRT" },
 ];
 
 export function Navbar() {
@@ -63,7 +63,8 @@ export function Navbar() {
                 )}
               >
                 <span className={cn(isLoading && "invisible")}>
-                  {link.label}
+                  <span className="sm:hidden">{link.shortLabel}</span>
+                  <span className="hidden sm:inline">{link.label}</span>
                 </span>
                 {isLoading && (
                   <Skeleton className="absolute inset-0 rounded-sm" />
