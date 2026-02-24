@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { generateSteps, type FoldStep, type FoldSequence } from "@/lib/euclid-folding";
 
 export interface UseFolding {
@@ -26,9 +26,9 @@ export interface UseFolding {
 }
 
 export function useFolding(): UseFolding {
-  const [a, setA] = useState(34);
-  const [b, setB] = useState(55);
-  const [useModulo, setUseModulo] = useState(false);
+  const [a, setARaw] = useState(34);
+  const [b, setBRaw] = useState(55);
+  const [useModulo, setUseModuloRaw] = useState(false);
   const [speed, setSpeed] = useState(1);
   const [playing, setPlaying] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
@@ -47,11 +47,25 @@ export function useFolding(): UseFolding {
     return null;
   }, [sequence.tooMany]);
 
-  // Auto-reset when inputs or mode change
-  useEffect(() => {
+  const resetPlaybackState = useCallback(() => {
     setPlaying(false);
     setCurrentStep(0);
-  }, [a, b, useModulo]);
+  }, []);
+
+  const setA = useCallback((v: number) => {
+    resetPlaybackState();
+    setARaw(v);
+  }, [resetPlaybackState]);
+
+  const setB = useCallback((v: number) => {
+    resetPlaybackState();
+    setBRaw(v);
+  }, [resetPlaybackState]);
+
+  const setUseModulo = useCallback((v: boolean) => {
+    resetPlaybackState();
+    setUseModuloRaw(v);
+  }, [resetPlaybackState]);
 
   const play = useCallback(() => {
     if (!isComplete && !error) setPlaying(true);

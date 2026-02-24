@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -29,13 +29,6 @@ export function Navbar() {
       router.push(href);
     });
   };
-
-  // Clear pending state when navigation completes
-  useEffect(() => {
-    if (!isPending) {
-      setPendingHref(null);
-    }
-  }, [isPending]);
 
   return (
     <header className="sticky top-0 z-50 border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">

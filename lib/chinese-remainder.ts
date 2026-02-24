@@ -115,7 +115,6 @@ function transformEquation(eq: ParsedCRTEquation): TransformedEquation {
 export function solveCRT(equations: ParsedCRTEquation[]): CRTResult {
   // Step 1: Transform equations to the form x ≡ a (mod m)
   const transformedEquations: TransformedEquation[] = [];
-  const needsTransformation = equations.some((eq) => eq.b !== 1);
 
   for (const eq of equations) {
     if (eq.b === 1) {

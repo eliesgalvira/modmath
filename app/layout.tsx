@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Roboto } from "next/font/google";
+import Script from "next/script";
 import { Navbar } from "@/components/navbar";
 import "./globals.css";
 
@@ -32,9 +33,10 @@ export default function RootLayout({
     <html lang="en" className={`${roboto.variable} dark`}>
       <head>
         {process.env.NODE_ENV === "development" && (
-          <script
+          <Script
             src="https://unpkg.com/react-scan/dist/auto.global.js"
             crossOrigin="anonymous"
+            strategy="afterInteractive"
           />
         )}
       </head>

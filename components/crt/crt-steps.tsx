@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { StepsTable } from "@/components/steps-table";
 import { ChevronDown, ChevronRight } from "lucide-react";
-import type { CRTResult, TransformedEquation, CalculationResult } from "@/types";
+import type { CRTResult, CalculationResult } from "@/types";
 
 interface CRTStepsProps {
   result: CRTResult;

@@ -1,6 +1,6 @@
 "use client";
 
-import type { Step, CalculationResult } from "@/types";
+import type { CalculationResult } from "@/types";
 
 interface StepExplanationProps {
   result: CalculationResult;
@@ -33,7 +33,7 @@ export function StepExplanation({ result }: StepExplanationProps) {
         {/* Algorithm steps */}
         <div className="space-y-2">
           <div className="font-medium">Extended Euclidean Algorithm</div>
-          {algorithmSteps.map((step, index) => (
+          {algorithmSteps.map((step) => (
             <div 
               key={step.step} 
               className="pl-4 border-l-2 border-muted py-1 text-muted-foreground"
