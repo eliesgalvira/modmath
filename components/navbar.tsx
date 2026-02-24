@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 const navLinks = [
   { href: "/", label: "Modular Inverse", shortLabel: "Inverse" },
   { href: "/crt", label: "Chinese Remainder Theorem", shortLabel: "CRT" },
+  { href: "/folding", label: "Folding Segments", shortLabel: "Folding" },
 ];
 
 export function Navbar() {
