@@ -1,6 +1,11 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+} from "react";
 import { animate, type AnimationPlaybackControls } from "framer-motion";
 import { Play, Pause, RotateCcw } from "lucide-react";
 
@@ -10,6 +15,8 @@ import {
   phase1,
   phase2,
   morphToV,
+  finalFoldOverlap,
+  finalFlatten,
   type VGeo,
   VB_W,
   VB_H,
@@ -33,33 +40,29 @@ import {
 function useAnimationDriver(
   folding: ReturnType<typeof useFolding>,
   setGeo: (g: VGeo) => void,
+  setFinalPose: (v: boolean) => void,
 ) {
   const controlsRef = useRef<AnimationPlaybackControls | null>(null);
+  const finalPlayedRef = useRef(false);
 
   useEffect(() => {
     if (controlsRef.current) controlsRef.current.speed = folding.speed;
   }, [folding.speed]);
 
   useEffect(() => {
-    if (!folding.playing || folding.isComplete) return;
+    if (!folding.playing) return;
 
     const step = folding.steps[folding.currentStep];
     const nextStep = folding.steps[folding.currentStep + 1];
-    if (!step || !nextStep) return;
 
     let active = true;
     const allCtrl: AnimationPlaybackControls[] = [];
 
-    const { left, right } = step;
-    const { quickFolds } = nextStep;
-    const shorter = Math.min(left, right);
-    const longer = Math.max(left, right);
-    const totalFoldsCount = quickFolds + 1;
-    const remainder = longer - totalFoldsCount * shorter;
-
     const BASE = 0.8;
     const QUICK = 0.35;
     const MORPH = 0.6;
+    const FINAL_OVERLAP = 0.7;
+    const FINAL_FLATTEN = 0.9;
 
     function anim(dur: number, fn: (t: number) => void): Promise<void> {
       return new Promise<void>((resolve) => {
@@ -79,6 +82,33 @@ function useAnimationDriver(
     }
 
     (async () => {
+      if (folding.isComplete) {
+        if (finalPlayedRef.current) return;
+        if (folding.gcd <= 0) return;
+
+        finalPlayedRef.current = true;
+        setFinalPose(false);
+        await anim(FINAL_OVERLAP, (t) => setGeo(finalFoldOverlap(folding.gcd, t)));
+        if (active) await anim(FINAL_FLATTEN, (t) => setGeo(finalFlatten(folding.gcd, t)));
+        if (active) {
+          setFinalPose(true);
+          folding.pause();
+        }
+        return;
+      }
+
+      if (!step || !nextStep) return;
+
+      finalPlayedRef.current = false;
+      setFinalPose(false);
+
+      const { left, right } = step;
+      const { quickFolds } = nextStep;
+      const shorter = Math.min(left, right);
+      const longer = Math.max(left, right);
+      const totalFoldsCount = quickFolds + 1;
+      const remainder = longer - totalFoldsCount * shorter;
+
       for (let i = 0; i < quickFolds && active; i++) {
         await anim(QUICK, (t) => setGeo(phase1(left, right, t, i)));
       }
@@ -105,7 +135,7 @@ function useAnimationDriver(
       controlsRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [folding.playing, folding.currentStep]);
+  }, [folding.playing, folding.currentStep, folding.isComplete, folding.gcd]);
 }
 
 // ── Page ──────────────────────────────────────────────────────────────────
@@ -113,17 +143,15 @@ function useAnimationDriver(
 export default function FoldingPage() {
   const folding = useFolding();
   const [geo, setGeo] = useState<VGeo>(() => staticV(folding.a, folding.b));
+  const [showFinalPose, setShowFinalPose] = useState(false);
 
-  useEffect(() => {
+  useAnimationDriver(folding, setGeo, setShowFinalPose);
+
+  const currentGeo = (() => {
+    if (folding.playing || (folding.isComplete && showFinalPose)) return geo;
     const step = folding.steps[folding.currentStep];
-    if (step && !folding.playing) setGeo(staticV(step.left, step.right));
-  }, [folding.steps, folding.currentStep, folding.playing]);
-
-  useEffect(() => {
-    setGeo(staticV(folding.a, folding.b));
-  }, [folding.a, folding.b]);
-
-  useAnimationDriver(folding, setGeo);
+    return step ? staticV(step.left, step.right) : staticV(folding.a, folding.b);
+  })();
 
   const handleA = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -261,6 +289,9 @@ export default function FoldingPage() {
               <span className="text-muted-foreground tabular-nums">
                 Step {folding.currentStep} / {folding.totalSteps}
               </span>
+              <span className="text-muted-foreground tabular-nums">
+                Steps = divisions ({folding.totalSteps})
+              </span>
               {folding.isComplete && folding.gcd > 0 && (
                 <Badge className="text-sm">GCD = {folding.gcd}</Badge>
               )}
@@ -275,30 +306,30 @@ export default function FoldingPage() {
             className="w-full"
             style={{ background: "#0f172a" }}
           >
-            {geo.bgLine && (
+            {currentGeo.bgLine && (
               <line
-                x1={geo.bgLine.start.x}
-                y1={geo.bgLine.start.y}
-                x2={geo.bgLine.end.x}
-                y2={geo.bgLine.end.y}
+                x1={currentGeo.bgLine.start.x}
+                y1={currentGeo.bgLine.start.y}
+                x2={currentGeo.bgLine.end.x}
+                y2={currentGeo.bgLine.end.y}
                 stroke="#94a3b8"
                 strokeWidth={2}
-                opacity={geo.bgLine.opacity * 0.3}
+                opacity={currentGeo.bgLine.opacity * 0.3}
               />
             )}
 
-            {geo.left.value > 0 && (
+            {currentGeo.left.value > 0 && (
               <>
                 <line
-                  x1={geo.left.start.x}
-                  y1={geo.left.start.y}
-                  x2={geo.left.end.x}
-                  y2={geo.left.end.y}
+                  x1={currentGeo.left.start.x}
+                  y1={currentGeo.left.start.y}
+                  x2={currentGeo.left.end.x}
+                  y2={currentGeo.left.end.y}
                   stroke="#94a3b8"
                   strokeWidth={4}
                   strokeLinecap="round"
                 />
-                {geo.left.beads.map((b, i) => (
+                {currentGeo.left.beads.map((b, i) => (
                   <circle
                     key={`l${i}`}
                     cx={b.x}
@@ -310,31 +341,31 @@ export default function FoldingPage() {
                   />
                 ))}
                 <text
-                  x={geo.left.labelPos.x}
-                  y={geo.left.labelPos.y}
+                  x={currentGeo.left.labelPos.x}
+                  y={currentGeo.left.labelPos.y}
                   fill="white"
                   fontSize={36}
                   fontWeight="bold"
                   textAnchor="middle"
                   dominantBaseline="middle"
                 >
-                  {geo.left.value}
+                  {currentGeo.left.value}
                 </text>
               </>
             )}
 
-            {geo.right.value > 0 && (
+            {currentGeo.right.value > 0 && (
               <>
                 <line
-                  x1={geo.right.start.x}
-                  y1={geo.right.start.y}
-                  x2={geo.right.end.x}
-                  y2={geo.right.end.y}
+                  x1={currentGeo.right.start.x}
+                  y1={currentGeo.right.start.y}
+                  x2={currentGeo.right.end.x}
+                  y2={currentGeo.right.end.y}
                   stroke="#94a3b8"
                   strokeWidth={4}
                   strokeLinecap="round"
                 />
-                {geo.right.beads.map((b, i) => (
+                {currentGeo.right.beads.map((b, i) => (
                   <circle
                     key={`r${i}`}
                     cx={b.x}
@@ -346,22 +377,22 @@ export default function FoldingPage() {
                   />
                 ))}
                 <text
-                  x={geo.right.labelPos.x}
-                  y={geo.right.labelPos.y}
+                  x={currentGeo.right.labelPos.x}
+                  y={currentGeo.right.labelPos.y}
                   fill="white"
                   fontSize={36}
                   fontWeight="bold"
                   textAnchor="middle"
                   dominantBaseline="middle"
                 >
-                  {geo.right.value}
+                  {currentGeo.right.value}
                 </text>
               </>
             )}
 
             <circle
-              cx={geo.pivot.x}
-              cy={geo.pivot.y}
+              cx={currentGeo.pivot.x}
+              cy={currentGeo.pivot.y}
               r={4}
               fill="#e2e8f0"
               stroke="#64748b"

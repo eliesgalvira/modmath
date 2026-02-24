@@ -67,7 +67,7 @@ export function useFolding(): UseFolding {
   const advance = useCallback(() => {
     setCurrentStep((prev) => {
       const next = prev + 1;
-      if (next >= totalSteps) setPlaying(false);
+      if (next > totalSteps) setPlaying(false);
       return Math.min(next, totalSteps);
     });
   }, [totalSteps]);

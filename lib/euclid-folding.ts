@@ -295,3 +295,54 @@ export function morphToV(
     right: buildArm(piv, rEnd, tgtRight),
   };
 }
+
+// ── Finale — collapse V into one horizontal stick ──────────────────────────
+
+/**
+ * Final reveal phase 1: rotate the right arm onto the left arm.
+ */
+export function finalFoldOverlap(value: number, u: number): VGeo {
+  const len = Math.max(value, 1);
+  const s = computeScale(len);
+  const p: Point = { x: PIVOT_X, y: PIVOT_Y };
+  const leftEnd = pt(p, LEFT_ANG, len * s);
+  const rightEnd = pt(p, lerp(RIGHT_ANG, LEFT_ANG, u), len * s);
+  return {
+    pivot: p,
+    left: buildArm(p, leftEnd, value),
+    right: buildArm(p, rightEnd, value),
+  };
+}
+
+/**
+ * Final reveal phase 2: after overlap, keep one stick and move/zoom it into
+ * a horizontal bar near the center of the viewBox.
+ */
+export function finalFlatten(value: number, u: number): VGeo {
+  const len = Math.max(value, 1);
+  const s = computeScale(len);
+
+  const startPivot: Point = { x: PIVOT_X, y: PIVOT_Y };
+  const startEnd = pt(startPivot, LEFT_ANG, len * s);
+  const startPxLen = Math.hypot(startEnd.x - startPivot.x, startEnd.y - startPivot.y);
+
+  const targetLen = Math.min(VB_W * 0.46, Math.max(startPxLen * 1.9, 150));
+  // Move the pivot from bottom-center to the right endpoint of a centered
+  // horizontal segment, so the final stick is perfectly centered.
+  const targetPivot: Point = { x: VB_W / 2 + targetLen / 2, y: VB_H / 2 };
+  const targetEnd: Point = { x: VB_W / 2 - targetLen / 2, y: VB_H / 2 };
+
+  const piv = lp(startPivot, targetPivot, u);
+  const end = lp(startEnd, targetEnd, u);
+  const leftArm = buildArm(piv, end, value);
+  leftArm.labelPos = {
+    x: (piv.x + end.x) / 2,
+    y: (piv.y + end.y) / 2 - 24,
+  };
+
+  return {
+    pivot: piv,
+    left: leftArm,
+    right: buildArm(piv, piv, 0),
+  };
+}
