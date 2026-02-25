@@ -41,6 +41,7 @@ type AnimateEase = NonNullable<Parameters<typeof animate>[2]> extends {
 }
   ? E
   : never;
+const SPEED_BASELINE_SCALE = 0.5;
 
 // ── Framer-Motion animation driver ────────────────────────────────────────
 
@@ -53,7 +54,8 @@ function useAnimationDriver(
   const finalPlayedRef = useRef(false);
 
   useEffect(() => {
-    if (controlsRef.current) controlsRef.current.speed = folding.speed;
+    if (controlsRef.current)
+      controlsRef.current.speed = folding.speed * SPEED_BASELINE_SCALE;
   }, [folding.speed]);
 
   useLayoutEffect(() => {
@@ -86,7 +88,7 @@ function useAnimationDriver(
           },
           onComplete: resolve,
         });
-        c.speed = folding.speed;
+        c.speed = folding.speed * SPEED_BASELINE_SCALE;
         allCtrl.push(c);
         controlsRef.current = c;
       });
