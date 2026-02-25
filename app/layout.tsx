@@ -22,6 +22,30 @@ export const metadata: Metadata = {
     template: "%s | modmath",
   },
   description: "Mathematical calculators with step-by-step explanations",
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL || "https://modmath.vercel.app",
+  ),
+  openGraph: {
+    title: "modmath",
+    description: "Mathematical calculators with step-by-step explanations",
+    url: "/",
+    siteName: "modmath",
+    images: [
+      {
+        url: "/og-image-inverse.png",
+        width: 1200,
+        height: 600,
+        alt: "modmath modular inverse calculator",
+      },
+    ],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "modmath",
+    description: "Mathematical calculators with step-by-step explanations",
+    images: ["/og-image-inverse.png"],
+  },
 };
 
 export default function RootLayout({
