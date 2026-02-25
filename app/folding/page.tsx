@@ -68,13 +68,13 @@ function useAnimationDriver(
     function anim(
       dur: number,
       fn: (t: number) => void,
-      ease: string | number[] = "easeInOut",
+      ease: Parameters<typeof animate>[2]["ease"] = "easeInOut",
     ): Promise<void> {
       return new Promise<void>((resolve) => {
         if (!active) return resolve();
         const c = animate(0, 1, {
           duration: dur,
-          ease: ease as any,
+          ease,
           onUpdate: (v) => {
             if (active) fn(v);
           },

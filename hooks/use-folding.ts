@@ -29,7 +29,7 @@ export function useFolding(): UseFolding {
   const [a, setARaw] = useState(34);
   const [b, setBRaw] = useState(55);
   const [useModulo, setUseModuloRaw] = useState(false);
-  const [speed, setSpeed] = useState(1);
+  const [speed, setSpeed] = useState(0.5);
   const [playing, setPlaying] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
 
