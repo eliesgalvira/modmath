@@ -64,12 +64,16 @@ function useAnimationDriver(
     const FINAL_OVERLAP = 0.7;
     const FINAL_FLATTEN = 0.9;
 
-    function anim(dur: number, fn: (t: number) => void): Promise<void> {
+    function anim(
+      dur: number,
+      fn: (t: number) => void,
+      ease: string | number[] = "easeInOut",
+    ): Promise<void> {
       return new Promise<void>((resolve) => {
         if (!active) return resolve();
         const c = animate(0, 1, {
           duration: dur,
-          ease: "easeInOut",
+          ease: ease as any,
           onUpdate: (v) => {
             if (active) fn(v);
           },
@@ -88,8 +92,8 @@ function useAnimationDriver(
 
         finalPlayedRef.current = true;
         setFinalPose(false);
-        await anim(FINAL_OVERLAP, (t) => setGeo(finalFoldOverlap(folding.gcd, t)));
-        if (active) await anim(FINAL_FLATTEN, (t) => setGeo(finalFlatten(folding.gcd, t)));
+        await anim(FINAL_OVERLAP, (t) => setGeo(finalFoldOverlap(folding.gcd, t)), [0.4, 0, 1, 1]);
+        if (active) await anim(FINAL_FLATTEN, (t) => setGeo(finalFlatten(folding.gcd, t)), [0, 0, 0.25, 1]);
         if (active) {
           setFinalPose(true);
           folding.pause();
@@ -109,21 +113,24 @@ function useAnimationDriver(
       const totalFoldsCount = quickFolds + 1;
       const remainder = longer - totalFoldsCount * shorter;
 
+      const EASE_INTO = [0.4, 0, 1, 1];
+      const EASE_OUT_OF = [0, 0, 0.25, 1];
+
       for (let i = 0; i < quickFolds && active; i++) {
-        await anim(QUICK, (t) => setGeo(phase1(left, right, t, i)));
+        await anim(QUICK, (t) => setGeo(phase1(left, right, t, i)), EASE_INTO);
       }
       if (active)
-        await anim(BASE, (t) => setGeo(phase1(left, right, t, quickFolds)));
+        await anim(BASE, (t) => setGeo(phase1(left, right, t, quickFolds)), EASE_INTO);
       if (active) {
         if (remainder === 0 && nextStep.left === nextStep.right) {
           const from = phase1(left, right, 1, quickFolds);
           await anim(MORPH, (t) =>
             setGeo(morphToV(from, nextStep.left, nextStep.right, t)),
-          );
+          EASE_OUT_OF);
         } else {
           await anim(BASE, (t) =>
             setGeo(phase2(left, right, t, totalFoldsCount)),
-          );
+          EASE_OUT_OF);
         }
       }
       if (active) folding.advance();
