@@ -3,6 +3,7 @@
 import {
   useState,
   useEffect,
+  useLayoutEffect,
   useRef,
   useCallback,
 } from "react";
@@ -49,7 +50,7 @@ function useAnimationDriver(
     if (controlsRef.current) controlsRef.current.speed = folding.speed;
   }, [folding.speed]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!folding.playing) return;
 
     const step = folding.steps[folding.currentStep];
@@ -107,6 +108,9 @@ function useAnimationDriver(
       setFinalPose(false);
 
       const { left, right } = step;
+      // Keep the first visible frame of every step in sync with the step state.
+      // This prevents a one-frame flash of stale geometry when play/resume starts.
+      setGeo(staticV(left, right));
       const { quickFolds } = nextStep;
       const shorter = Math.min(left, right);
       const longer = Math.max(left, right);
