@@ -36,6 +36,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
+type AnimateEase = NonNullable<Parameters<typeof animate>[2]> extends {
+  ease?: infer E;
+}
+  ? E
+  : never;
+
 // ── Framer-Motion animation driver ────────────────────────────────────────
 
 function useAnimationDriver(
@@ -68,7 +74,7 @@ function useAnimationDriver(
     function anim(
       dur: number,
       fn: (t: number) => void,
-      ease: Parameters<typeof animate>[2]["ease"] = "easeInOut",
+      ease: AnimateEase = "easeInOut",
     ): Promise<void> {
       return new Promise<void>((resolve) => {
         if (!active) return resolve();
@@ -117,8 +123,8 @@ function useAnimationDriver(
       const totalFoldsCount = quickFolds + 1;
       const remainder = longer - totalFoldsCount * shorter;
 
-      const EASE_INTO = [0.4, 0, 1, 1];
-      const EASE_OUT_OF = [0, 0, 0.25, 1];
+      const EASE_INTO: [number, number, number, number] = [0.4, 0, 1, 1];
+      const EASE_OUT_OF: [number, number, number, number] = [0, 0, 0.25, 1];
 
       for (let i = 0; i < quickFolds && active; i++) {
         await anim(QUICK, (t) => setGeo(phase1(left, right, t, i)), EASE_INTO);
