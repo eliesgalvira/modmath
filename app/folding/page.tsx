@@ -53,6 +53,7 @@ function useAnimationDriver(
   const controlsRef = useRef<AnimationPlaybackControls | null>(null);
   const finalPlayedRef = useRef(false);
   const resumeRef = useRef<(() => void) | null>(null);
+  const stoppingRef = useRef(false);
 
   useEffect(() => {
     if (controlsRef.current)
@@ -111,7 +112,7 @@ function useAnimationDriver(
         let lastV = 0;
         let resolved = false;
         const wrappedResolve = () => {
-          if (resolved) return;
+          if (resolved || stoppingRef.current) return;
           resolved = true;
           resumeRef.current = null;
           resolve();
@@ -194,7 +195,9 @@ function useAnimationDriver(
 
   const setAnimationPaused = useCallback((paused: boolean) => {
     if (paused) {
+      stoppingRef.current = true;
       controlsRef.current?.stop();
+      stoppingRef.current = false;
     } else {
       resumeRef.current?.();
     }
