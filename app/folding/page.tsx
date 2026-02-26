@@ -155,6 +155,16 @@ function useAnimationDriver(
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [folding.playing, folding.currentStep, folding.isComplete, folding.gcd]);
+
+  const pauseAnimation = useCallback(() => {
+    controlsRef.current?.pause();
+  }, []);
+
+  const resumeAnimation = useCallback(() => {
+    controlsRef.current?.play();
+  }, []);
+
+  return { pauseAnimation, resumeAnimation };
 }
 
 // ── Page ──────────────────────────────────────────────────────────────────
@@ -163,8 +173,22 @@ export default function FoldingPage() {
   const folding = useFolding();
   const [geo, setGeo] = useState<VGeo>(() => staticV(folding.a, folding.b));
   const [showFinalPose, setShowFinalPose] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
 
-  useAnimationDriver(folding, setGeo, setShowFinalPose);
+  const { pauseAnimation, resumeAnimation } = useAnimationDriver(folding, setGeo, setShowFinalPose);
+
+  const handlePlayPause = useCallback(() => {
+    if (folding.playing && !isPaused) {
+      pauseAnimation();
+      setIsPaused(true);
+    } else if (folding.playing && isPaused) {
+      resumeAnimation();
+      setIsPaused(false);
+    } else {
+      setIsPaused(false);
+      folding.play();
+    }
+  }, [folding, isPaused, pauseAnimation, resumeAnimation]);
 
   const currentGeo = (() => {
     if (folding.playing || (folding.isComplete && showFinalPose)) return geo;
@@ -240,17 +264,17 @@ export default function FoldingPage() {
             <div className="flex flex-wrap items-center gap-2">
               <Button
                 className="min-w-[100px] gap-1.5"
-                onClick={folding.playing ? folding.pause : folding.play}
+                onClick={handlePlayPause}
                 disabled={
                   !!folding.error || (folding.isComplete && !folding.playing)
                 }
               >
-                {folding.playing ? (
+                {folding.playing && !isPaused ? (
                   <Pause className="size-3.5" />
                 ) : (
                   <Play className="size-3.5" />
                 )}
-                {folding.playing ? "Pause" : "Play"}
+                {folding.playing && !isPaused ? "Pause" : "Play"}
               </Button>
 
               <Button
