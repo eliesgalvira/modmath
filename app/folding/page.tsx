@@ -52,6 +52,8 @@ function useAnimationDriver(
 ) {
   const controlsRef = useRef<AnimationPlaybackControls | null>(null);
   const finalPlayedRef = useRef(false);
+  const resumeRef = useRef<(() => void) | null>(null);
+  const stoppingRef = useRef(false);
 
   useEffect(() => {
     if (controlsRef.current)
@@ -73,6 +75,32 @@ function useAnimationDriver(
     const FINAL_OVERLAP = 0.7;
     const FINAL_FLATTEN = 0.9;
 
+    function startAnim(
+      from: number,
+      dur: number,
+      fn: (t: number) => void,
+      ease: AnimateEase,
+      resolve: () => void,
+    ) {
+      const remainingDur = dur * (1 - from);
+      if (remainingDur <= 0) {
+        fn(1);
+        resolve();
+        return;
+      }
+      const c = animate(from, 1, {
+        duration: remainingDur,
+        ease,
+        onUpdate: (v) => {
+          if (active) fn(v);
+        },
+        onComplete: resolve,
+      });
+      c.speed = folding.speed * SPEED_BASELINE_SCALE;
+      allCtrl.push(c);
+      controlsRef.current = c;
+    }
+
     function anim(
       dur: number,
       fn: (t: number) => void,
@@ -80,17 +108,27 @@ function useAnimationDriver(
     ): Promise<void> {
       return new Promise<void>((resolve) => {
         if (!active) return resolve();
-        const c = animate(0, 1, {
-          duration: dur,
-          ease,
-          onUpdate: (v) => {
-            if (active) fn(v);
-          },
-          onComplete: resolve,
-        });
-        c.speed = folding.speed * SPEED_BASELINE_SCALE;
-        allCtrl.push(c);
-        controlsRef.current = c;
+
+        let lastV = 0;
+        let resolved = false;
+        const wrappedResolve = () => {
+          if (resolved || stoppingRef.current) return;
+          resolved = true;
+          resumeRef.current = null;
+          resolve();
+        };
+
+        const wrappedFn = (v: number) => {
+          lastV = v;
+          fn(v);
+        };
+
+        resumeRef.current = () => {
+          if (resolved) return;
+          startAnim(lastV, dur, wrappedFn, ease, wrappedResolve);
+        };
+
+        startAnim(0, dur, wrappedFn, ease, wrappedResolve);
       });
     }
 
@@ -116,8 +154,6 @@ function useAnimationDriver(
       setFinalPose(false);
 
       const { left, right } = step;
-      // Keep the first visible frame of every step in sync with the step state.
-      // This prevents a one-frame flash of stale geometry when play/resume starts.
       setGeo(staticV(left, right));
       const { quickFolds } = nextStep;
       const shorter = Math.min(left, right);
@@ -152,9 +188,22 @@ function useAnimationDriver(
       active = false;
       allCtrl.forEach((c) => c.stop());
       controlsRef.current = null;
+      resumeRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [folding.playing, folding.currentStep, folding.isComplete, folding.gcd]);
+
+  const setAnimationPaused = useCallback((paused: boolean) => {
+    if (paused) {
+      stoppingRef.current = true;
+      controlsRef.current?.stop();
+      stoppingRef.current = false;
+    } else {
+      resumeRef.current?.();
+    }
+  }, []);
+
+  return { setAnimationPaused };
 }
 
 // ── Page ──────────────────────────────────────────────────────────────────
@@ -163,8 +212,22 @@ export default function FoldingPage() {
   const folding = useFolding();
   const [geo, setGeo] = useState<VGeo>(() => staticV(folding.a, folding.b));
   const [showFinalPose, setShowFinalPose] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
 
-  useAnimationDriver(folding, setGeo, setShowFinalPose);
+  const { setAnimationPaused } = useAnimationDriver(folding, setGeo, setShowFinalPose);
+
+  const handlePlayPause = useCallback(() => {
+    if (folding.playing && !isPaused) {
+      setAnimationPaused(true);
+      setIsPaused(true);
+    } else if (folding.playing && isPaused) {
+      setAnimationPaused(false);
+      setIsPaused(false);
+    } else {
+      setIsPaused(false);
+      folding.play();
+    }
+  }, [folding, isPaused, setAnimationPaused]);
 
   const currentGeo = (() => {
     if (folding.playing || (folding.isComplete && showFinalPose)) return geo;
@@ -240,17 +303,17 @@ export default function FoldingPage() {
             <div className="flex flex-wrap items-center gap-2">
               <Button
                 className="min-w-[100px] gap-1.5"
-                onClick={folding.playing ? folding.pause : folding.play}
+                onClick={handlePlayPause}
                 disabled={
                   !!folding.error || (folding.isComplete && !folding.playing)
                 }
               >
-                {folding.playing ? (
+                {folding.playing && !isPaused ? (
                   <Pause className="size-3.5" />
                 ) : (
                   <Play className="size-3.5" />
                 )}
-                {folding.playing ? "Pause" : "Play"}
+                {folding.playing && !isPaused ? "Pause" : "Play"}
               </Button>
 
               <Button
