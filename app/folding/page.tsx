@@ -52,13 +52,11 @@ function useAnimationDriver(
 ) {
   const controlsRef = useRef<AnimationPlaybackControls | null>(null);
   const finalPlayedRef = useRef(false);
-  const isPausedRef = useRef(false);
+  const savedTimeRef = useRef(0);
 
   useEffect(() => {
     if (controlsRef.current)
-      controlsRef.current.speed = isPausedRef.current
-        ? 0
-        : folding.speed * SPEED_BASELINE_SCALE;
+      controlsRef.current.speed = folding.speed * SPEED_BASELINE_SCALE;
   }, [folding.speed]);
 
   useLayoutEffect(() => {
@@ -91,7 +89,7 @@ function useAnimationDriver(
           },
           onComplete: resolve,
         });
-        c.speed = isPausedRef.current ? 0 : folding.speed * SPEED_BASELINE_SCALE;
+        c.speed = folding.speed * SPEED_BASELINE_SCALE;
         allCtrl.push(c);
         controlsRef.current = c;
       });
@@ -155,19 +153,20 @@ function useAnimationDriver(
       active = false;
       allCtrl.forEach((c) => c.stop());
       controlsRef.current = null;
-      isPausedRef.current = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [folding.playing, folding.currentStep, folding.isComplete, folding.gcd]);
 
   const setAnimationPaused = useCallback((paused: boolean) => {
-    isPausedRef.current = paused;
-    if (controlsRef.current) {
-      controlsRef.current.speed = paused
-        ? 0
-        : folding.speed * SPEED_BASELINE_SCALE;
+    if (!controlsRef.current) return;
+    if (paused) {
+      savedTimeRef.current = controlsRef.current.time;
+      controlsRef.current.pause();
+    } else {
+      controlsRef.current.time = savedTimeRef.current;
+      controlsRef.current.play();
     }
-  }, [folding.speed]);
+  }, []);
 
   return { setAnimationPaused };
 }
