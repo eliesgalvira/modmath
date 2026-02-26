@@ -52,7 +52,7 @@ function useAnimationDriver(
 ) {
   const controlsRef = useRef<AnimationPlaybackControls | null>(null);
   const finalPlayedRef = useRef(false);
-  const savedTimeRef = useRef(0);
+  const resumeRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     if (controlsRef.current)
@@ -74,6 +74,32 @@ function useAnimationDriver(
     const FINAL_OVERLAP = 0.7;
     const FINAL_FLATTEN = 0.9;
 
+    function startAnim(
+      from: number,
+      dur: number,
+      fn: (t: number) => void,
+      ease: AnimateEase,
+      resolve: () => void,
+    ) {
+      const remainingDur = dur * (1 - from);
+      if (remainingDur <= 0) {
+        fn(1);
+        resolve();
+        return;
+      }
+      const c = animate(from, 1, {
+        duration: remainingDur,
+        ease,
+        onUpdate: (v) => {
+          if (active) fn(v);
+        },
+        onComplete: resolve,
+      });
+      c.speed = folding.speed * SPEED_BASELINE_SCALE;
+      allCtrl.push(c);
+      controlsRef.current = c;
+    }
+
     function anim(
       dur: number,
       fn: (t: number) => void,
@@ -81,17 +107,27 @@ function useAnimationDriver(
     ): Promise<void> {
       return new Promise<void>((resolve) => {
         if (!active) return resolve();
-        const c = animate(0, 1, {
-          duration: dur,
-          ease,
-          onUpdate: (v) => {
-            if (active) fn(v);
-          },
-          onComplete: resolve,
-        });
-        c.speed = folding.speed * SPEED_BASELINE_SCALE;
-        allCtrl.push(c);
-        controlsRef.current = c;
+
+        let lastV = 0;
+        let resolved = false;
+        const wrappedResolve = () => {
+          if (resolved) return;
+          resolved = true;
+          resumeRef.current = null;
+          resolve();
+        };
+
+        const wrappedFn = (v: number) => {
+          lastV = v;
+          fn(v);
+        };
+
+        resumeRef.current = () => {
+          if (resolved) return;
+          startAnim(lastV, dur, wrappedFn, ease, wrappedResolve);
+        };
+
+        startAnim(0, dur, wrappedFn, ease, wrappedResolve);
       });
     }
 
@@ -117,8 +153,6 @@ function useAnimationDriver(
       setFinalPose(false);
 
       const { left, right } = step;
-      // Keep the first visible frame of every step in sync with the step state.
-      // This prevents a one-frame flash of stale geometry when play/resume starts.
       setGeo(staticV(left, right));
       const { quickFolds } = nextStep;
       const shorter = Math.min(left, right);
@@ -153,18 +187,16 @@ function useAnimationDriver(
       active = false;
       allCtrl.forEach((c) => c.stop());
       controlsRef.current = null;
+      resumeRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [folding.playing, folding.currentStep, folding.isComplete, folding.gcd]);
 
   const setAnimationPaused = useCallback((paused: boolean) => {
-    if (!controlsRef.current) return;
     if (paused) {
-      savedTimeRef.current = controlsRef.current.time;
-      controlsRef.current.pause();
+      controlsRef.current?.stop();
     } else {
-      controlsRef.current.time = savedTimeRef.current;
-      controlsRef.current.play();
+      resumeRef.current?.();
     }
   }, []);
 
