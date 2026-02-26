@@ -52,10 +52,13 @@ function useAnimationDriver(
 ) {
   const controlsRef = useRef<AnimationPlaybackControls | null>(null);
   const finalPlayedRef = useRef(false);
+  const isPausedRef = useRef(false);
 
   useEffect(() => {
     if (controlsRef.current)
-      controlsRef.current.speed = folding.speed * SPEED_BASELINE_SCALE;
+      controlsRef.current.speed = isPausedRef.current
+        ? 0
+        : folding.speed * SPEED_BASELINE_SCALE;
   }, [folding.speed]);
 
   useLayoutEffect(() => {
@@ -88,7 +91,7 @@ function useAnimationDriver(
           },
           onComplete: resolve,
         });
-        c.speed = folding.speed * SPEED_BASELINE_SCALE;
+        c.speed = isPausedRef.current ? 0 : folding.speed * SPEED_BASELINE_SCALE;
         allCtrl.push(c);
         controlsRef.current = c;
       });
@@ -152,19 +155,21 @@ function useAnimationDriver(
       active = false;
       allCtrl.forEach((c) => c.stop());
       controlsRef.current = null;
+      isPausedRef.current = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [folding.playing, folding.currentStep, folding.isComplete, folding.gcd]);
 
-  const pauseAnimation = useCallback(() => {
-    controlsRef.current?.pause();
-  }, []);
+  const setAnimationPaused = useCallback((paused: boolean) => {
+    isPausedRef.current = paused;
+    if (controlsRef.current) {
+      controlsRef.current.speed = paused
+        ? 0
+        : folding.speed * SPEED_BASELINE_SCALE;
+    }
+  }, [folding.speed]);
 
-  const resumeAnimation = useCallback(() => {
-    controlsRef.current?.play();
-  }, []);
-
-  return { pauseAnimation, resumeAnimation };
+  return { setAnimationPaused };
 }
 
 // ── Page ──────────────────────────────────────────────────────────────────
@@ -175,20 +180,20 @@ export default function FoldingPage() {
   const [showFinalPose, setShowFinalPose] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
 
-  const { pauseAnimation, resumeAnimation } = useAnimationDriver(folding, setGeo, setShowFinalPose);
+  const { setAnimationPaused } = useAnimationDriver(folding, setGeo, setShowFinalPose);
 
   const handlePlayPause = useCallback(() => {
     if (folding.playing && !isPaused) {
-      pauseAnimation();
+      setAnimationPaused(true);
       setIsPaused(true);
     } else if (folding.playing && isPaused) {
-      resumeAnimation();
+      setAnimationPaused(false);
       setIsPaused(false);
     } else {
       setIsPaused(false);
       folding.play();
     }
-  }, [folding, isPaused, pauseAnimation, resumeAnimation]);
+  }, [folding, isPaused, setAnimationPaused]);
 
   const currentGeo = (() => {
     if (folding.playing || (folding.isComplete && showFinalPose)) return geo;
